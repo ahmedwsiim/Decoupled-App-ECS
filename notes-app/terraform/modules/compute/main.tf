@@ -71,13 +71,17 @@ resource "aws_ecs_task_definition" "app" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/${var.environment}-notes-app"
-        "awslogs-region"        = "us-east-1"
+        "awslogs-group"         = aws_cloudwatch_log_group.app_logs.name
+        "awslogs-region"        = var.aws_region
         "awslogs-stream-prefix" = "ecs"
-        "awslogs-create-group"  = "true"
       }
     }
   }])
+}
+
+resource "aws_cloudwatch_log_group" "app_logs" {
+  name              = "/ecs/${var.environment}-notes-app"
+  retention_in_days = 7
 }
 
 resource "aws_ecs_service" "app" {
