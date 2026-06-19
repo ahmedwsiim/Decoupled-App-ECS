@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: notesadmin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: notesdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "3001:80"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=notesadmin
+      - DB_PASSWORD=secretpassword
+      - DB_NAME=notesdb
+      - DB_PORT=5432
+      - PORT=80
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:

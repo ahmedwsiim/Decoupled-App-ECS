@@ -1,0 +1,53 @@
+name: 1. Build & Push to ECR
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: prod-notes-backend
+
+jobs:
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        GIT_SHA: ${{ github.sha }}
+      run: |
+        # Calculate version: 10 revisions per major version.
+        # Run 1=v1.0, Run 2=v1.1 ... Run 10=v1.9, Run 11=v2.0, Run 12=v2.1
+        MAJOR_VERSION=$(( ((GITHUB_RUN_NUMBER - 1) / 10) + 1 ))
+        MINOR_VERSION=$(( (GITHUB_RUN_NUMBER - 1) % 10 ))
+        
+        # Tag format: v{MAJOR}.{MINOR}
+        IMAGE_TAG="v${MAJOR_VERSION}.${MINOR_VERSION}"
+        
+        echo "Building the Docker image with tag: $IMAGE_TAG"
+        cd backend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:v${MAJOR_VERSION}
+        
+        echo "Pushing image to ECR..."
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:v${MAJOR_VERSION}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
