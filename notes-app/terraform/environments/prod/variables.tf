@@ -1,5 +1,5 @@
 variable "aws_region" {
-  default = "us-east-1"
+  default = "eu-north-1"
 }
 
 variable "environment" {
@@ -27,7 +27,7 @@ variable "db_subnets_cidr" {
 
 variable "azs" {
   type    = list(string)
-  default = ["us-east-1a", "us-east-1b"]
+  default = ["eu-north-1a", "eu-north-1b"]
 }
 
 variable "db_name" {
